@@ -54,10 +54,16 @@ let lastBobCoinTime = 0;
 let bobCoin = null;
 let lastSaveTime = 0;
 let lastLoadTime = 0;
+// canvas & UI sizing
+const CANVAS_W = 1024;
+const CANVAS_H = 640;
+let cnv = null;
 
 function setup(){
-  let cnv = createCanvas(windowWidth, windowHeight);
+  cnv = createCanvas(CANVAS_W, CANVAS_H);
   cnv.parent('canvas-holder');
+  // center canvas in window
+  cnv.position((windowWidth - width) / 2, (windowHeight - height) / 2);
   textFont('Arial');
   textStyle(BOLD);
 
@@ -70,7 +76,8 @@ function setup(){
 }
 
 function windowResized(){
-  resizeCanvas(windowWidth, windowHeight);
+  // keep canvas fixed size but re-center when window changes
+  cnv.position((windowWidth - width) / 2, (windowHeight - height) / 2);
 }
 
 function draw(){
@@ -94,70 +101,73 @@ function updateBackground(){
 function drawUI(){
   // Left panel: Stats & Normal Upgrades
   push();
-  let leftX = 12, leftW = 320, leftH = 600;
+  let leftX = 8, leftW = 260, leftH = 560;
   fill(0,160);
   noStroke();
   rect(leftX,12,leftW,leftH,8);
   fill(255);
-  textSize(26);
+  textSize(20);
   textStyle(BOLD);
   text("Stats & Upgrades",leftX+10,40);
 
   // Coins and stats
   fill(255,215,0);
-  textSize(22);
-  text("Coins: "+formatNumber(coins),leftX+10,72);
   textSize(18);
+  text("Coins: "+formatNumber(coins),leftX+10,72);
+  textSize(14);
   fill(200);
-  text("Coin/Click: "+formatNumber(getCoinPerClick()),leftX+10,102);
-  text("Clicks: "+clickCount,leftX+10,128);
+  text("Coin/Click: "+formatNumber(getCoinPerClick()),leftX+10,98);
+  text("Clicks: "+clickCount,leftX+10,118);
 
   // Upgrades header
   fill(255);
-  textSize(22);
-  text("Upgrades",leftX+10,160);
+  textSize(18);
+  text("Upgrades",leftX+10,150);
 
   // base & multiplier & final
-  let ux = leftX+10, uy = 180, uw = leftW-40, uh = 36;
+  let ux = leftX+10, uy = 160, uw = leftW-40, uh = 32;
   drawUpgradeButton('base', ux, uy, uw, uh, "Increase base (+1)", "Cost: "+upgrades.baseCost);
-  drawUpgradeButton('mult', ux, uy+48, uw, uh, "Increase mult (+10%)", "Cost: "+upgrades.multCost);
+  drawUpgradeButton('mult', ux, uy+44, uw, uh, "Increase mult (+10%)", "Cost: "+upgrades.multCost);
   if(!finalUpgrade.bought){
-    drawUpgradeButton('final', ux, uy+96, uw, uh, "Final: x clicks", "Cost: "+formatNumber(finalUpgrade.cost));
+    drawUpgradeButton('final', ux, uy+88, uw, uh, "Final: x clicks", "Cost: "+formatNumber(finalUpgrade.cost));
   } else {
-    fill(180); textSize(14); text("Final click multiplier bought", ux+6, uy+96+22);
+    fill(180); textSize(12); text("Final click multiplier bought", ux+6, uy+88+20);
   }
   pop();
 
   // Right panel: Rebirth & Prestige (separate from normal upgrades)
   push();
-  let rightX = leftX + leftW + 12, rightW = 320, rightH = 600, rx = rightX, rw = rightW;
+  let rightW = 260, rightH = 560; let rx = width - rightW - 12, rw = rightW;
   fill(0,160); noStroke(); rect(rx,12,rw,rightH,8);
   fill(255); textSize(26); textStyle(BOLD); text("Rebirth & Prestige", rx+10,40);
 
   // tokens/points display
-  fill(144,238,144); noStroke(); ellipse(rx+32,80,20,20); fill(0); textSize(12); textAlign(CENTER,CENTER); text("R",rx+32,80);
-  fill(255); textAlign(LEFT); textSize(16); text("Rebirth Tokens: "+rebirthTokens, rx+56,84);
-  fill(135,206,235); noStroke(); ellipse(rx+32,106,20,20); fill(0); textSize(12); textAlign(CENTER,CENTER); text("P",rx+32,106);
-  fill(255); textAlign(LEFT); textSize(16); text("Prestige Points: "+prestigePoints, rx+56,110);
+  fill(144,238,144); noStroke(); ellipse(rx+28,72,18,18); fill(0); textSize(11); textAlign(CENTER,CENTER); text("R",rx+28,72);
+  fill(255); textAlign(LEFT); textSize(14); text("Rebirth Tokens: "+rebirthTokens, rx+50,74);
+  fill(135,206,235); noStroke(); ellipse(rx+28,96,18,18); fill(0); textSize(11); textAlign(CENTER,CENTER); text("P",rx+28,96);
+  fill(255); textAlign(LEFT); textSize(14); text("Prestige Points: "+prestigePoints, rx+50,98);
 
   // Rebirth Upgrades (tokens)
-  fill(255); textSize(18); text("Rebirth Upgrades (tokens)", rx+10,142);
-  let ry = 158; let rwbtn = rw-40; let rhbtn = 36;
+  fill(255); textSize(16); text("Rebirth Upgrades (tokens)", rx+10,132);
+  let ry = 146; let rwbtn = rw-40; let rhbtn = 30;
   drawUpgradeButton('rebCoin', rx+10, ry, rwbtn, rhbtn, "Permanent coin x2", "Cost: "+rebirthUpgrades.coinMulti.cost+" Tkns");
-  drawUpgradeButton('rebToken', rx+10, ry+52, rwbtn, rhbtn, "Increase token gain", "Cost: "+rebirthUpgrades.tokenMulti.cost+" Tkns");
-  drawUpgradeButton('rebCrit', rx+10, ry+104, rwbtn, rhbtn, "Crit chance +0.5%", "Cost: "+critUpgrade.cost+" Tkns");
+  drawUpgradeButton('rebToken', rx+10, ry+44, rwbtn, rhbtn, "Increase token gain", "Cost: "+rebirthUpgrades.tokenMulti.cost+" Tkns");
+  drawUpgradeButton('rebCrit', rx+10, ry+88, rwbtn, rhbtn, "Crit chance +0.5%", "Cost: "+critUpgrade.cost+" Tkns");
 
   // Prestige Upgrades
-  let py = ry+170;
-  fill(255); textSize(18); text("Prestige Upgrades (pts)", rx+10, py-12);
+  let py = ry+140;
+  fill(255); textSize(16); text("Prestige Upgrades (pts)", rx+10, py-12);
   drawUpgradeButton('preCoin', rx+10, py, rwbtn, rhbtn, "Prestige: coin x3", "Cost: "+prestigeUpgrades.coinMulti.cost+" pts");
-  drawUpgradeButton('preToken', rx+10, py+52, rwbtn, rhbtn, "Prestige: token x2", "Cost: "+prestigeUpgrades.tokenMulti.cost+" pts");
-  drawUpgradeButton('preGain', rx+10, py+104, rwbtn, rhbtn, "Prestige: prestige+", "Cost: "+prestigeUpgrades.prestigeGain.cost+" pts");
+  drawUpgradeButton('preToken', rx+10, py+44, rwbtn, rhbtn, "Prestige: token x2", "Cost: "+prestigeUpgrades.tokenMulti.cost+" pts");
+  drawUpgradeButton('preGain', rx+10, py+88, rwbtn, rhbtn, "Prestige: prestige+", "Cost: "+prestigeUpgrades.prestigeGain.cost+" pts");
 
-  // Rebirth & Prestige action buttons (show requirements)
-  let ay = py+170;
-  drawSmallButton('rebirth', rx+10, ay, 140, 36, "Rebirth (req: "+formatNumber(REBIRTH_REQUIREMENT)+")");
-  drawSmallButton('prestige', rx+160, ay, 140, 36, "Prestige (req: "+formatNumber(PRESTIGE_REQUIREMENT)+")");
+  // Rebirth & Prestige action buttons (short labels) and requirement text above
+  let ay = py+140;
+  drawSmallButton('rebirth', rx+10, ay, 120, 32, "Rebirth");
+  drawSmallButton('prestige', rx+140, ay, 120, 32, "Prestige");
+  fill(200); textSize(12); textAlign(LEFT);
+  text("Req (rebirth): "+formatNumber(REBIRTH_REQUIREMENT)+" coins", rx+10, ay-18);
+  text("Req (prestige): "+formatNumber(PRESTIGE_REQUIREMENT)+" coins", rx+140, ay-18);
 
   pop();
 }
@@ -166,31 +176,31 @@ function drawUpgradeButton(id, x, y, w, h, label, cost){
   // store rect for click handling
   buttonRects[id] = {x,y,w,h};
   let active = buttonHighlights[id] && (millis() - buttonHighlights[id] < HIGHLIGHT_DURATION);
-  fill(active? color(70,120,255) : 40);
+  fill(active? color(70,120,255) : 50);
   stroke(255,8);
   rect(x,y,w,h,8);
   noStroke();
   fill(255);
-  textSize(18);
-  text(label,x+8,y+22);
+  textSize(14);
+  text(label,x+8,y+20);
   fill(200);
-  text(cost,x+w-110,y+22);
+  text(cost,x+w-110,y+20);
 }
 
 function drawSmallButton(id, x, y, w, h, label, cb){
   buttonRects[id] = {x,y,w,h};
   let active = buttonHighlights[id] && (millis() - buttonHighlights[id] < HIGHLIGHT_DURATION);
-  fill(active? color(70,120,255) : 30);
+  fill(active? color(70,120,255) : 40);
   rect(x,y,w,h,8);
   fill(255);
-  textSize(18);
-  text(label,x+10,y+24);
+  textSize(14);
+  text(label,x+8,y+20);
 }
 
 function drawButton(){
   // bottom centered button
-  let bw = 360;
-  let bh = 110;
+  let bw = 260;
+  let bh = 80;
   let bx = width/2 - bw/2;
   let by = height - bh - 28;
 
@@ -210,7 +220,7 @@ function drawButton(){
   buttonRects['main'] = {x:bx,y:by,w:bw,h:bh};
   noStroke();
   fill(255,235,120);
-  textSize(48);
+  textSize(36);
   textStyle(BOLD);
   textAlign(CENTER,CENTER);
   text("CLICK",bx+bw/2,by+bh/2);
@@ -356,8 +366,8 @@ function updateFloating(){
 
 class FloatingText{
   constructor(txt,x,y,critical=false){ this.txt=txt; this.x=x; this.y=y; this.alpha=255; this.critical=critical; }
-  update(){ this.y -= 0.8; this.alpha -= 3; if(this.alpha<=0) this.dead=true; }
-  draw(){ push(); textSize(this.critical?40:28); fill(255,215,0,this.alpha); textAlign(CENTER); textStyle(BOLD); text("💰 "+this.txt,this.x,this.y); pop(); }
+  update(){ this.y -= 0.6; this.alpha -= 2.5; if(this.alpha<=0) this.dead=true; }
+  draw(){ push(); textSize(this.critical?32:22); fill(255,215,0,this.alpha); textAlign(CENTER); textStyle(BOLD); text("💰 "+this.txt,this.x,this.y); pop(); }
 }
 
 function pushFloating(ft){
