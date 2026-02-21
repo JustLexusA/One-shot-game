@@ -227,27 +227,23 @@ function drawButton(){
 
   // detect mouse over and clickable handled in mousePressed
   textAlign(LEFT);
-  // right-side toggle UI
+  // toggle + Save/Load moved to left-top area to avoid overlapping right panel
   push();
-  let rx = width - 140, ry = 12, rw = 128, rh = 48;
-  fill(0,160); stroke(255,40); rect(rx,ry,rw,rh,8);
-  noStroke(); fill(255); textSize(14); textAlign(LEFT, CENTER);
-  text("Toggle Button Color", rx+8, ry+rh/2);
-  fill(colorToggle? '#3ee67a' : '#444'); rect(rx+rw-42, ry+8, 32, 32,6);
+  let tx = 20, ty = 12, tw = 128, th = 40;
+  fill(0,160); stroke(255,40); rect(tx,ty,tw,th,8);
+  noStroke(); fill(255); textSize(13); textAlign(LEFT, CENTER);
+  text("Toggle Button Color", tx+8, ty+th/2);
+  fill(colorToggle? '#3ee67a' : '#444'); rect(tx+tw-42, ty+6, 32, 28,6);
   // register toggle rect
-  buttonRects['toggle'] = {x:rx,y:ry,w:rw,h:rh};
-  
-  // Save/Load buttons and status
-  let sbx = rx, sby = ry + rh + 8, sbw = 60, sbh = 28;
-  // Save
+  buttonRects['toggle'] = {x:tx,y:ty,w:tw,h:th};
+
+  // Save/Load buttons (below toggle)
+  let sbx = tx, sby = ty + th + 8, sbw = 58, sbh = 26;
   fill(30); stroke(255,30); rect(sbx, sby, sbw, sbh,6);
-  noStroke(); fill(255); textSize(14); textAlign(CENTER, CENTER); text("Save", sbx+sbw/2, sby+sbh/2);
-  // register save rect
+  noStroke(); fill(255); textSize(13); textAlign(CENTER, CENTER); text("Save", sbx+sbw/2, sby+sbh/2);
   buttonRects['save'] = {x:sbx,y:sby,w:sbw,h:sbh};
-  // Load
   fill(30); stroke(255,30); rect(sbx+sbw+8, sby, sbw, sbh,6);
-  noStroke(); fill(255); textSize(14); textAlign(CENTER, CENTER); text("Load", sbx+sbw+8+sbw/2, sby+sbh/2);
-  // register load rect
+  noStroke(); fill(255); textSize(13); textAlign(CENTER, CENTER); text("Load", sbx+sbw+8+sbw/2, sby+sbh/2);
   buttonRects['load'] = {x:sbx+sbw+8,y:sby,w:sbw,h:sbh};
 
   // status
