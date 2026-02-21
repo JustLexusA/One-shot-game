@@ -58,6 +58,10 @@ let lastLoadTime = 0;
 const CANVAS_W = 1024;
 const CANVAS_H = 640;
 let cnv = null;
+// reset confirmation
+let resetConfirm = false;
+let resetConfirmTime = 0;
+const RESET_CONFIRM_TIMEOUT = 4000; // ms
 
 function setup(){
   cnv = createCanvas(CANVAS_W, CANVAS_H);
@@ -82,6 +86,8 @@ function windowResized(){
 
 function draw(){
   updateBackground();
+  // auto-cancel reset confirmation after timeout
+  if(resetConfirm && millis() - resetConfirmTime > RESET_CONFIRM_TIMEOUT) resetConfirm = false;
   drawUI();
   drawButton();
   updateFloating();
@@ -248,6 +254,18 @@ function drawButton(){
   noStroke(); fill(255); textSize(13); textAlign(CENTER, CENTER); text("Load", sbx+sbw+8+sbw/2, sby+sbh/2);
   buttonRects['load'] = {x:sbx+sbw+8,y:sby,w:sbw,h:sbh};
 
+  // Reset button (next to Load)
+  let rbx = sbx + sbw*2 + 16;
+  // show confirm state if active
+  if(resetConfirm){
+    fill(190,60,60); stroke(255,30); rect(rbx, sby, sbw, sbh,6);
+    noStroke(); fill(255); textSize(13); textAlign(CENTER, CENTER); text("Confirm", rbx+sbw/2, sby+sbh/2);
+  } else {
+    fill(40); stroke(255,30); rect(rbx, sby, sbw, sbh,6);
+    noStroke(); fill(255); textSize(13); textAlign(CENTER, CENTER); text("Reset", rbx+sbw/2, sby+sbh/2);
+  }
+  buttonRects['reset'] = {x:rbx,y:sby,w:sbw,h:sbh};
+
   // status
   let statusX = tx, statusY = sby + sbh + 10;
   fill(200); textSize(14); textAlign(LEFT, TOP);
@@ -258,6 +276,13 @@ function drawButton(){
     text("Saved: never", statusX, statusY);
   }
   if(lastLoadTime>0 && millis()-lastLoadTime<3000){ text(" • Loaded just now", statusX+100, statusY); }
+  // show reset confirm countdown when active
+  if(resetConfirm){
+    let left = max(0, RESET_CONFIRM_TIMEOUT - (millis() - resetConfirmTime));
+    let sec = Math.ceil(left/1000);
+    fill(255,160,160); textSize(13); textAlign(LEFT, TOP);
+    text("Confirm reset: "+sec+"s", statusX+120, statusY);
+  }
 
   pop();
 }
@@ -282,6 +307,8 @@ function mousePressed(){
     if(mouseX>r.x && mouseX<r.x+r.w && mouseY>r.y && mouseY<r.y+r.h){
       // register highlight
       buttonHighlights[id] = millis();
+      // if clicking any other button, cancel pending reset confirm
+      if(id !== 'reset') resetConfirm = false;
       // handle actions
       switch(id){
         case 'base':
@@ -321,6 +348,16 @@ function mousePressed(){
           saveState(); pushFloating(new FloatingText("Saved", mouseX, mouseY, false)); break;
         case 'load':
           loadState(); lastLoadTime = millis(); pushFloating(new FloatingText("Loaded", mouseX, mouseY, false)); break;
+        case 'reset':
+          if(!resetConfirm){
+            resetConfirm = true;
+            resetConfirmTime = millis();
+            pushFloating(new FloatingText("Click Reset again to confirm", mouseX, mouseY, false));
+          } else {
+            resetAll();
+            resetConfirm = false;
+          }
+          break;
         case 'toggle':
           colorToggle = !colorToggle; break;
       }
@@ -331,6 +368,9 @@ function mousePressed(){
   // Toggle clicked fallback
   let rx = width - 140, ry = 12, rw = 128, rh = 48;
   if(mouseX>rx && mouseX<rx+rw && mouseY>ry && mouseY<ry+rh){ colorToggle = !colorToggle; }
+
+  // cancel reset confirmation if user clicks the standalone toggle area
+  if(mouseX>rx && mouseX<rx+rw && mouseY>ry && mouseY<ry+rh){ resetConfirm = false; }
 }
 
 
@@ -508,4 +548,23 @@ function loadState(){
     if(s.critUpgrade) critUpgrade = s.critUpgrade;
     if(typeof s.colorToggle === 'boolean') colorToggle = s.colorToggle;
   }catch(e){ }
+}
+
+// Reset all progress to defaults and save
+function resetAll(){
+  coins = 0;
+  baseCoin = 1;
+  coinMultiplier = 1;
+  clickCount = 0;
+  upgrades = { baseCost:10, baseLevel:0, multCost:50, multLevel:0 };
+  rebirthTokens = 0;
+  rebirthUpgrades = { coinMulti: { level: 0, cost: 1, mult: 3 }, tokenMulti: { level: 0, cost: 2, mult: 2 } };
+  prestigePoints = 0;
+  prestigeUpgrades = { coinMulti: { level: 0, cost: 1, mult: 10 }, tokenMulti: { level: 0, cost: 2, mult: 3 }, prestigeGain: { level: 0, cost: 3, mult: 2 } };
+  finalUpgrade = { bought: false, cost: 1e12 };
+  critChance = 2.5;
+  critUpgrade = { level: 0, cost: 1 };
+  saveState();
+  lastSaveTime = millis();
+  pushFloating(new FloatingText("Reset", width/2, height/2, false));
 }
