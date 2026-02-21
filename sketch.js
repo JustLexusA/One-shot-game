@@ -15,15 +15,15 @@ const REBIRTH_REQUIREMENT = 10000; // coins needed to rebirth
 const PRESTIGE_REQUIREMENT = 1000000; // coins needed to prestige
 let rebirthTokens = 0;
 let rebirthUpgrades = { // permanent multipliers bought with tokens
-  coinMulti: { level: 0, cost: 1, mult: 1.5 },
-  tokenMulti: { level: 0, cost: 2, mult: 1.25 }
+  coinMulti: { level: 0, cost: 1, mult: 3 },
+  tokenMulti: { level: 0, cost: 2, mult: 2 }
 };
 
 let prestigePoints = 0;
 let prestigeUpgrades = {
-  coinMulti: { level: 0, cost: 1, mult: 2.0 },
-  tokenMulti: { level: 0, cost: 2, mult: 1.5 },
-  prestigeGain: { level: 0, cost: 3, mult: 1.25 }
+  coinMulti: { level: 0, cost: 1, mult: 10 },
+  tokenMulti: { level: 0, cost: 2, mult: 3 },
+  prestigeGain: { level: 0, cost: 3, mult: 2 }
 };
 
 // final click-count upgrade
