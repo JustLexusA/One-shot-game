@@ -227,18 +227,20 @@ function drawButton(){
 
   // detect mouse over and clickable handled in mousePressed
   textAlign(LEFT);
-  // toggle + Save/Load moved to left-top area to avoid overlapping right panel
+  // toggle + Save/Load centered in middle area to avoid overlapping panels
   push();
-  let tx = 20, ty = 12, tw = 128, th = 40;
+  let middleW = 220;
+  let tx = width/2 - middleW/2, ty = height/2 - 72, tw = middleW, th = 44;
   fill(0,160); stroke(255,40); rect(tx,ty,tw,th,8);
   noStroke(); fill(255); textSize(13); textAlign(LEFT, CENTER);
   text("Toggle Button Color", tx+8, ty+th/2);
-  fill(colorToggle? '#3ee67a' : '#444'); rect(tx+tw-42, ty+6, 32, 28,6);
+  fill(colorToggle? '#3ee67a' : '#444'); rect(tx+tw-46, ty+6, 36, 32,6);
   // register toggle rect
   buttonRects['toggle'] = {x:tx,y:ty,w:tw,h:th};
 
   // Save/Load buttons (below toggle)
-  let sbx = tx, sby = ty + th + 8, sbw = 58, sbh = 26;
+  let sbw = 70, sbh = 30;
+  let sbx = tx + Math.floor((tw - (sbw*2+8)) / 2), sby = ty + th + 10;
   fill(30); stroke(255,30); rect(sbx, sby, sbw, sbh,6);
   noStroke(); fill(255); textSize(13); textAlign(CENTER, CENTER); text("Save", sbx+sbw/2, sby+sbh/2);
   buttonRects['save'] = {x:sbx,y:sby,w:sbw,h:sbh};
@@ -247,7 +249,7 @@ function drawButton(){
   buttonRects['load'] = {x:sbx+sbw+8,y:sby,w:sbw,h:sbh};
 
   // status
-  let statusX = rx, statusY = sby + sbh + 12;
+  let statusX = tx, statusY = sby + sbh + 10;
   fill(200); textSize(14); textAlign(LEFT, TOP);
   if(lastSaveTime>0){
     let sec = floor((millis()-lastSaveTime)/1000);
