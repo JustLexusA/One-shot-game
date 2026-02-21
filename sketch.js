@@ -12,6 +12,7 @@ let upgrades = {
 
 // Rebirth / prestige
 const REBIRTH_REQUIREMENT = 10000; // coins needed to rebirth
+const PRESTIGE_REQUIREMENT = 1000000; // coins needed to prestige
 let rebirthTokens = 0;
 let rebirthUpgrades = { // permanent multipliers bought with tokens
   coinMulti: { level: 0, cost: 1, mult: 1.5 },
@@ -30,9 +31,14 @@ let finalUpgrade = { bought: false, cost: 1e12 };
 
 // critical
 let critChance = 2.5; // percent
-let critChanceMax 
+let critChanceMax = 10;
 let critUpgradeCost = 1; // token cost
 let critUpgrade = { level: 0, cost: 1 };
+
+// UI button highlights and rects
+let buttonHighlights = {}; // id -> millis() when clicked
+let buttonRects = {}; // id -> {x,y,w,h}
+const HIGHLIGHT_DURATION = 300; // ms
 
 // UI toggles
 let colorToggle = false;
@@ -86,82 +92,81 @@ function updateBackground(){
 }
 
 function drawUI(){
-  // left panel (taller to fit rebirth/prestige purchases)
+  // Left panel: Stats & Normal Upgrades
   push();
+  let leftX = 12, leftW = 320, leftH = 600;
   fill(0,160);
   noStroke();
-  rect(12,12,320,600,8);
+  rect(leftX,12,leftW,leftH,8);
   fill(255);
   textSize(26);
   textStyle(BOLD);
-  text("Stats & Upgrades",22,40);
+  text("Stats & Upgrades",leftX+10,40);
 
-  // Coins
+  // Coins and stats
   fill(255,215,0);
   textSize(22);
-  text("Coins: "+formatNumber(coins),22,72);
+  text("Coins: "+formatNumber(coins),leftX+10,72);
   textSize(18);
   fill(200);
-  text("Coin/Click: "+formatNumber(getCoinPerClick()),22,102);
-  text("Clicks: "+clickCount,22,128);
-
-  // Rebirth tokens with icon
-  push();
-  fill(144,238,144); noStroke(); ellipse(34,150,20,20); fill(0); textSize(12); textAlign(CENTER,CENTER); text("R",34,150);
-  fill(255); textAlign(LEFT); textSize(16); text("Rebirth Tokens: "+rebirthTokens,50,156);
-  // Prestige icon
-  fill(135,206,235); noStroke(); ellipse(34,176,20,20); fill(0); textSize(12); textAlign(CENTER,CENTER); text("P",34,176);
-  fill(255); textAlign(LEFT); textSize(16); text("Prestige Points: "+prestigePoints,50,182);
-  pop();
+  text("Coin/Click: "+formatNumber(getCoinPerClick()),leftX+10,102);
+  text("Clicks: "+clickCount,leftX+10,128);
 
   // Upgrades header
   fill(255);
   textSize(22);
-  text("Upgrades",22,216);
+  text("Upgrades",leftX+10,160);
 
-  // base upgrade button
-  let x=22,yBase=236,w=280,h=36;
-  drawUpgradeButton(x,yBase,w,h,"Increase base (+1)","Cost: "+upgrades.baseCost);
-
-  // multiplier upgrade
-  let yMult = yBase + 44;
-  drawUpgradeButton(x,yMult,w,h,"Increase mult (+10%)","Cost: "+upgrades.multCost);
-
-  // final upgrade display
-  let yFinal = yMult + 56;
+  // base & multiplier & final
+  let ux = leftX+10, uy = 180, uw = leftW-40, uh = 36;
+  drawUpgradeButton('base', ux, uy, uw, uh, "Increase base (+1)", "Cost: "+upgrades.baseCost);
+  drawUpgradeButton('mult', ux, uy+48, uw, uh, "Increase mult (+10%)", "Cost: "+upgrades.multCost);
   if(!finalUpgrade.bought){
-    drawUpgradeButton(x,yFinal,w,h,"Final: x clicks","Cost: "+formatNumber(finalUpgrade.cost));
+    drawUpgradeButton('final', ux, uy+96, uw, uh, "Final: x clicks", "Cost: "+formatNumber(finalUpgrade.cost));
   } else {
-    fill(180); textSize(14); text("Final click multiplier bought",x+6,yFinal+22);
+    fill(180); textSize(14); text("Final click multiplier bought", ux+6, uy+96+22);
   }
+  pop();
 
-  // Rebirth permanent upgrades (buy with tokens)
-  let yReb = yFinal + 56;
-  fill(255); textSize(16); text("Rebirth Upgrades (tokens)",x,yReb-8);
-  // coin multiplier permanent
-  drawUpgradeButton(x,yReb+12,w,36,"Permanent coin x2","Cost: "+rebirthUpgrades.coinMulti.cost+" Tkns");
-  // token gain multiplier
-  drawUpgradeButton(x,yReb+64,w,36,"Increase token gain","Cost: "+rebirthUpgrades.tokenMulti.cost+" Tkns");
-  // crit upgrade
-  drawUpgradeButton(x,yReb+116,w,36,"Crit chance +0.5%","Cost: "+critUpgrade.cost+" Tkns");
+  // Right panel: Rebirth & Prestige (separate from normal upgrades)
+  push();
+  let rightX = leftX + leftW + 12, rightW = 320, rightH = 600, rx = rightX, rw = rightW;
+  fill(0,160); noStroke(); rect(rx,12,rw,rightH,8);
+  fill(255); textSize(26); textStyle(BOLD); text("Rebirth & Prestige", rx+10,40);
+
+  // tokens/points display
+  fill(144,238,144); noStroke(); ellipse(rx+32,80,20,20); fill(0); textSize(12); textAlign(CENTER,CENTER); text("R",rx+32,80);
+  fill(255); textAlign(LEFT); textSize(16); text("Rebirth Tokens: "+rebirthTokens, rx+56,84);
+  fill(135,206,235); noStroke(); ellipse(rx+32,106,20,20); fill(0); textSize(12); textAlign(CENTER,CENTER); text("P",rx+32,106);
+  fill(255); textAlign(LEFT); textSize(16); text("Prestige Points: "+prestigePoints, rx+56,110);
+
+  // Rebirth Upgrades (tokens)
+  fill(255); textSize(18); text("Rebirth Upgrades (tokens)", rx+10,142);
+  let ry = 158; let rwbtn = rw-40; let rhbtn = 36;
+  drawUpgradeButton('rebCoin', rx+10, ry, rwbtn, rhbtn, "Permanent coin x2", "Cost: "+rebirthUpgrades.coinMulti.cost+" Tkns");
+  drawUpgradeButton('rebToken', rx+10, ry+52, rwbtn, rhbtn, "Increase token gain", "Cost: "+rebirthUpgrades.tokenMulti.cost+" Tkns");
+  drawUpgradeButton('rebCrit', rx+10, ry+104, rwbtn, rhbtn, "Crit chance +0.5%", "Cost: "+critUpgrade.cost+" Tkns");
 
   // Prestige Upgrades
-  let yPre = yReb + 180;
-  fill(255); textSize(16); text("Prestige Upgrades (pts)",x,yPre-8);
-  drawUpgradeButton(x,yPre+12,w,36,"Prestige: coin x3","Cost: "+prestigeUpgrades.coinMulti.cost+" pts");
-  drawUpgradeButton(x,yPre+64,w,36,"Prestige: token x2","Cost: "+prestigeUpgrades.tokenMulti.cost+" pts");
-  drawUpgradeButton(x,yPre+116,w,36,"Prestige: prestige+","Cost: "+prestigeUpgrades.prestigeGain.cost+" pts");
+  let py = ry+170;
+  fill(255); textSize(18); text("Prestige Upgrades (pts)", rx+10, py-12);
+  drawUpgradeButton('preCoin', rx+10, py, rwbtn, rhbtn, "Prestige: coin x3", "Cost: "+prestigeUpgrades.coinMulti.cost+" pts");
+  drawUpgradeButton('preToken', rx+10, py+52, rwbtn, rhbtn, "Prestige: token x2", "Cost: "+prestigeUpgrades.tokenMulti.cost+" pts");
+  drawUpgradeButton('preGain', rx+10, py+104, rwbtn, rhbtn, "Prestige: prestige+", "Cost: "+prestigeUpgrades.prestigeGain.cost+" pts");
 
-  // Rebirth & Prestige buttons (actions)
-  let yAction = yPre + 170;
-  drawSmallButton(x,yAction,130,36,"Rebirth",() => { attemptRebirth(); });
-  drawSmallButton(x+150,yAction,130,36,"Prestige",() => { attemptPrestige(); });
+  // Rebirth & Prestige action buttons (show requirements)
+  let ay = py+170;
+  drawSmallButton('rebirth', rx+10, ay, 140, 36, "Rebirth (req: "+formatNumber(REBIRTH_REQUIREMENT)+")");
+  drawSmallButton('prestige', rx+160, ay, 140, 36, "Prestige (req: "+formatNumber(PRESTIGE_REQUIREMENT)+")");
 
   pop();
 }
 
-function drawUpgradeButton(x,y,w,h,label,cost,cb){
-  fill(40);
+function drawUpgradeButton(id, x, y, w, h, label, cost){
+  // store rect for click handling
+  buttonRects[id] = {x,y,w,h};
+  let active = buttonHighlights[id] && (millis() - buttonHighlights[id] < HIGHLIGHT_DURATION);
+  fill(active? color(70,120,255) : 40);
   stroke(255,8);
   rect(x,y,w,h,8);
   noStroke();
@@ -172,8 +177,10 @@ function drawUpgradeButton(x,y,w,h,label,cost,cb){
   text(cost,x+w-110,y+22);
 }
 
-function drawSmallButton(x,y,w,h,label,cb){
-  fill(30);
+function drawSmallButton(id, x, y, w, h, label, cb){
+  buttonRects[id] = {x,y,w,h};
+  let active = buttonHighlights[id] && (millis() - buttonHighlights[id] < HIGHLIGHT_DURATION);
+  fill(active? color(70,120,255) : 30);
   rect(x,y,w,h,8);
   fill(255);
   textSize(18);
@@ -191,11 +198,16 @@ function drawButton(){
     lastButtonColorChange = millis();
   }
   let t = (colorToggle && floor(millis()/1000)%2==0) ? color(255,140,0) : color(200,80,40);
+  // highlight main click button if recently clicked
+  let activeMain = buttonHighlights['main'] && (millis() - buttonHighlights['main'] < HIGHLIGHT_DURATION);
+  let mainColor = activeMain ? color(255,200,120) : t;
 
-  fill(t);
+  fill(mainColor);
   stroke(255);
   strokeWeight(2);
   rect(bx,by,bw,bh,16);
+  // register main click rect for highlight & clicks
+  buttonRects['main'] = {x:bx,y:by,w:bw,h:bh};
   noStroke();
   fill(255,235,120);
   textSize(48);
@@ -212,15 +224,21 @@ function drawButton(){
   noStroke(); fill(255); textSize(14); textAlign(LEFT, CENTER);
   text("Toggle Button Color", rx+8, ry+rh/2);
   fill(colorToggle? '#3ee67a' : '#444'); rect(rx+rw-42, ry+8, 32, 32,6);
+  // register toggle rect
+  buttonRects['toggle'] = {x:rx,y:ry,w:rw,h:rh};
   
   // Save/Load buttons and status
   let sbx = rx, sby = ry + rh + 8, sbw = 60, sbh = 28;
   // Save
   fill(30); stroke(255,30); rect(sbx, sby, sbw, sbh,6);
   noStroke(); fill(255); textSize(14); textAlign(CENTER, CENTER); text("Save", sbx+sbw/2, sby+sbh/2);
+  // register save rect
+  buttonRects['save'] = {x:sbx,y:sby,w:sbw,h:sbh};
   // Load
   fill(30); stroke(255,30); rect(sbx+sbw+8, sby, sbw, sbh,6);
   noStroke(); fill(255); textSize(14); textAlign(CENTER, CENTER); text("Load", sbx+sbw+8+sbw/2, sby+sbh/2);
+  // register load rect
+  buttonRects['load'] = {x:sbx+sbw+8,y:sby,w:sbw,h:sbh};
 
   // status
   let statusX = rx, statusY = sby + sbh + 12;
@@ -240,75 +258,70 @@ function mousePressed(){
   // play sound
   playClickSound();
 
-  // check button click
-  let bw = 360;
-  let bh = 110;
-  let bx = width/2 - bw/2;
-  let by = height - bh - 28;
-  if(mouseX>bx && mouseX<bx+bw && mouseY>by && mouseY<by+bh){
-    doClick();
-    return;
+  // main click via registered rect if available
+  if(buttonRects['main']){
+    let r = buttonRects['main'];
+    if(mouseX>r.x && mouseX<r.x+r.w && mouseY>r.y && mouseY<r.y+r.h){ buttonHighlights['main'] = millis(); doClick(); return; }
   }
 
   // try collecting Bob's coin if clicked nearby
   if(tryCollectBobCoin(mouseX, mouseY)) return;
 
-  // check upgrade buttons in left panel (positional checks match drawUI)
-  // base
-  if(mouseX>22 && mouseX<302 && mouseY>236 && mouseY<236+36){
-    if(coins>=upgrades.baseCost){ coins-=upgrades.baseCost; upgrades.baseLevel++; baseCoin+=1; upgrades.baseCost = Math.floor(upgrades.baseCost*1.6); }
-  }
-  // mult
-  if(mouseX>22 && mouseX<302 && mouseY>280 && mouseY<280+36){
-    if(coins>=upgrades.multCost){ coins-=upgrades.multCost; upgrades.multLevel++; coinMultiplier += 0.1; upgrades.multCost = Math.floor(upgrades.multCost*1.8); }
-  }
-  // final
-  if(mouseX>22 && mouseX<302 && mouseY>336 && mouseY<336+36){
-    if(!finalUpgrade.bought && coins>=finalUpgrade.cost){ coins-=finalUpgrade.cost; finalUpgrade.bought=true; }
+  // Check any registered button rects (excluding main handled above)
+  for(let id in buttonRects){
+    if(id === 'main') continue;
+    let r = buttonRects[id];
+    if(mouseX>r.x && mouseX<r.x+r.w && mouseY>r.y && mouseY<r.y+r.h){
+      // register highlight
+      buttonHighlights[id] = millis();
+      // handle actions
+      switch(id){
+        case 'base':
+            if(coins>=upgrades.baseCost){ coins-=upgrades.baseCost; upgrades.baseLevel++; baseCoin+=1; upgrades.baseCost = Math.max(1, Math.floor(upgrades.baseCost*1.12)); }
+          break;
+        case 'mult':
+          if(coins>=upgrades.multCost){ coins-=upgrades.multCost; upgrades.multLevel++; coinMultiplier += 0.1; upgrades.multCost = Math.max(1, Math.floor(upgrades.multCost*1.15)); }
+          break;
+        case 'final':
+          if(!finalUpgrade.bought && coins>=finalUpgrade.cost){ coins-=finalUpgrade.cost; finalUpgrade.bought=true; }
+          break;
+        case 'rebCoin':
+          if(rebirthTokens>=rebirthUpgrades.coinMulti.cost){ rebirthTokens -= rebirthUpgrades.coinMulti.cost; rebirthUpgrades.coinMulti.level++; rebirthUpgrades.coinMulti.cost = Math.max(1, Math.ceil(rebirthUpgrades.coinMulti.cost*1.4)); }
+          break;
+        case 'rebToken':
+          if(rebirthTokens>=rebirthUpgrades.tokenMulti.cost){ rebirthTokens -= rebirthUpgrades.tokenMulti.cost; rebirthUpgrades.tokenMulti.level++; rebirthUpgrades.tokenMulti.cost = Math.max(1, Math.ceil(rebirthUpgrades.tokenMulti.cost*1.45)); }
+          break;
+        case 'rebCrit':
+          if(rebirthTokens>=critUpgrade.cost && critChance < critChanceMax){ rebirthTokens -= critUpgrade.cost; critUpgrade.level++; critChance = min(critChance+0.5, critChanceMax); critUpgrade.cost = Math.max(1, Math.ceil(critUpgrade.cost*1.3)); }
+          break;
+        case 'preCoin':
+          if(prestigePoints>=prestigeUpgrades.coinMulti.cost){ prestigePoints -= prestigeUpgrades.coinMulti.cost; prestigeUpgrades.coinMulti.level++; prestigeUpgrades.coinMulti.cost = Math.max(1, Math.ceil(prestigeUpgrades.coinMulti.cost*1.4)); }
+          break;
+        case 'preToken':
+          if(prestigePoints>=prestigeUpgrades.tokenMulti.cost){ prestigePoints -= prestigeUpgrades.tokenMulti.cost; prestigeUpgrades.tokenMulti.level++; prestigeUpgrades.tokenMulti.cost = Math.max(1, Math.ceil(prestigeUpgrades.tokenMulti.cost*1.4)); }
+          break;
+        case 'preGain':
+          if(prestigePoints>=prestigeUpgrades.prestigeGain.cost){ prestigePoints -= prestigeUpgrades.prestigeGain.cost; prestigeUpgrades.prestigeGain.level++; prestigeUpgrades.prestigeGain.cost = Math.max(1, Math.ceil(prestigeUpgrades.prestigeGain.cost*1.4)); }
+          break;
+        case 'rebirth':
+          attemptRebirth();
+          break;
+        case 'prestige':
+          attemptPrestige();
+          break;
+        case 'save':
+          saveState(); pushFloating(new FloatingText("Saved", mouseX, mouseY, false)); break;
+        case 'load':
+          loadState(); lastLoadTime = millis(); pushFloating(new FloatingText("Loaded", mouseX, mouseY, false)); break;
+        case 'toggle':
+          colorToggle = !colorToggle; break;
+      }
+      return;
+    }
   }
 
-  // Rebirth permanent purchases
-  // coinMulti permanent at yReb+12 -> y in [?]
-  let yRebTop = 336 + 56; // 392
-  if(mouseX>22 && mouseX<302 && mouseY>yRebTop+12 && mouseY<yRebTop+12+36){
-    if(rebirthTokens>=rebirthUpgrades.coinMulti.cost){ rebirthTokens -= rebirthUpgrades.coinMulti.cost; rebirthUpgrades.coinMulti.level++; rebirthUpgrades.coinMulti.cost = Math.ceil(rebirthUpgrades.coinMulti.cost*2); }
-  }
-  // token gain multiplier
-  if(mouseX>22 && mouseX<302 && mouseY>yRebTop+64 && mouseY<yRebTop+64+36){
-    if(rebirthTokens>=rebirthUpgrades.tokenMulti.cost){ rebirthTokens -= rebirthUpgrades.tokenMulti.cost; rebirthUpgrades.tokenMulti.level++; rebirthUpgrades.tokenMulti.cost = Math.ceil(rebirthUpgrades.tokenMulti.cost*2); }
-  }
-  // crit upgrade
-  if(mouseX>22 && mouseX<302 && mouseY>yRebTop+116 && mouseY<yRebTop+116+36){
-    if(rebirthTokens>=critUpgrade.cost && critChance < critChanceMax){ rebirthTokens -= critUpgrade.cost; critUpgrade.level++; critChance = min(critChance+0.5, critChanceMax); critUpgrade.cost = Math.ceil(critUpgrade.cost*1.8); }
-  }
-
-  // Prestige purchases
-  // compute yPre top position
-  let yPreTop = yRebTop + 180; // matches drawUI
-  if(mouseX>22 && mouseX<302 && mouseY>yPreTop+12 && mouseY<yPreTop+12+36){
-    if(prestigePoints>=prestigeUpgrades.coinMulti.cost){ prestigePoints -= prestigeUpgrades.coinMulti.cost; prestigeUpgrades.coinMulti.level++; prestigeUpgrades.coinMulti.cost = Math.ceil(prestigeUpgrades.coinMulti.cost*2); }
-  }
-  if(mouseX>22 && mouseX<302 && mouseY>yPreTop+64 && mouseY<yPreTop+64+36){
-    if(prestigePoints>=prestigeUpgrades.tokenMulti.cost){ prestigePoints -= prestigeUpgrades.tokenMulti.cost; prestigeUpgrades.tokenMulti.level++; prestigeUpgrades.tokenMulti.cost = Math.ceil(prestigeUpgrades.tokenMulti.cost*2); }
-  }
-  if(mouseX>22 && mouseX<302 && mouseY>yPreTop+116 && mouseY<yPreTop+116+36){
-    if(prestigePoints>=prestigeUpgrades.prestigeGain.cost){ prestigePoints -= prestigeUpgrades.prestigeGain.cost; prestigeUpgrades.prestigeGain.level++; prestigeUpgrades.prestigeGain.cost = Math.ceil(prestigeUpgrades.prestigeGain.cost*2); }
-  }
-
-  // action buttons (Rebirth & Prestige)
-  let yAction = yPreTop + 170;
-  if(mouseX>22 && mouseX<152 && mouseY>yAction && mouseY<yAction+36){ attemptRebirth(); }
-  if(mouseX>172 && mouseX<302 && mouseY>yAction && mouseY<yAction+36){ attemptPrestige(); }
-
-  // right-side toggle (button color)
+  // Toggle clicked fallback
   let rx = width - 140, ry = 12, rw = 128, rh = 48;
-  // Save/Load buttons coords (match drawButton)
-  let sbx = rx, sby = ry + rh + 8, sbw = 60, sbh = 28;
-  // Save clicked
-  if(mouseX>sbx && mouseX<sbx+sbw && mouseY>sby && mouseY<sby+sbh){ saveState(); pushFloating(new FloatingText("Saved", mouseX, mouseY, false)); return; }
-  // Load clicked
-  if(mouseX>sbx+sbw+8 && mouseX<sbx+sbw+8+sbw && mouseY>sby && mouseY<sby+sbh){ loadState(); lastLoadTime = millis(); pushFloating(new FloatingText("Loaded", mouseX, mouseY, false)); return; }
-  // Toggle clicked
   if(mouseX>rx && mouseX<rx+rw && mouseY>ry && mouseY<ry+rh){ colorToggle = !colorToggle; }
 }
 
@@ -376,8 +389,8 @@ function attemptRebirth(){
 }
 
 function attemptPrestige(){
-  // require at least 1 rebirth token to prestige
-  if(rebirthTokens <= 0) return;
+  // require at least PRESTIGE_REQUIREMENT coins to prestige
+  if(coins < PRESTIGE_REQUIREMENT) return;
   // prestige points gained based on rebirth tokens and prestige upgrades
   let basePts = rebirthTokens; // 1:1 by default
   // apply prestige gain multiplier
