@@ -230,7 +230,7 @@ function drawButton(){
   // toggle + Save/Load centered in middle area to avoid overlapping panels
   push();
   let middleW = 220;
-  let tx = width/2 - middleW/2, ty = height/2 - 72, tw = middleW, th = 44;
+  let tx = width/2 - middleW/2, ty = 12, tw = middleW, th = 44;
   fill(0,160); stroke(255,40); rect(tx,ty,tw,th,8);
   noStroke(); fill(255); textSize(13); textAlign(LEFT, CENTER);
   text("Toggle Button Color", tx+8, ty+th/2);
@@ -240,7 +240,7 @@ function drawButton(){
 
   // Save/Load buttons (below toggle)
   let sbw = 70, sbh = 30;
-  let sbx = tx + Math.floor((tw - (sbw*2+8)) / 2), sby = ty + th + 10;
+  let sbx = tx + Math.floor((tw - (sbw*2+8)) / 2), sby = ty + th + 8;
   fill(30); stroke(255,30); rect(sbx, sby, sbw, sbh,6);
   noStroke(); fill(255); textSize(13); textAlign(CENTER, CENTER); text("Save", sbx+sbw/2, sby+sbh/2);
   buttonRects['save'] = {x:sbx,y:sby,w:sbw,h:sbh};
